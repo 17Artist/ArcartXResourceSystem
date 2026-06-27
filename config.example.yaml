@@ -1,0 +1,34 @@
+server:
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 60s
+
+auth:
+  jwt_secret: ""          # 留空则自动生成并持久化到 data/.jwt_secret
+  jwt_expiration: 1h
+  default_admin_user: admin
+  default_admin_pass: admin123
+
+storage:
+  upload_dir: uploads
+  max_file_size: 536870912    # 512MB
+  allowed_extensions:
+    - zip
+
+security:
+  cors_origins:
+    - "*"
+  rate_limit:
+    api: 100/m
+    download: 30/m
+    login: 10/h
+
+signed_link:
+  max_expiration: 60m
+  max_downloads: 10
+
+traffic:
+  daily_limit: 214748364800   # 200GB
+
+database:
+  path: data/database.db

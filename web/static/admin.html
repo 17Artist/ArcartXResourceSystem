@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcartX 资源后端</title>
+<link rel="icon" type="image/x-icon" href="/static/logo.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+    --bg-base: #0a0a0f; --bg-card: #12121a; --bg-elevated: #1a1a2e; --bg-input: #0e0e16;
+    --border: #1f1f2e; --border-hover: #2a2a3e;
+    --accent: #4f93f0; --accent-hover: #6aa5f5; --accent-light: rgba(79,147,240,0.10); --accent-glow: rgba(79,147,240,0.30);
+    --accent-2: #7c5cff;
+    --gradient-accent: linear-gradient(135deg, #4f93f0 0%, #7c5cff 100%);
+    --text-primary: #eceaf2; --text-secondary: #a0a0b0; --text-muted: #6a6a7a;
+    --danger: #f0606a; --danger-hover: #d84a54; --success: #4fd998; --warning: #f0b24a;
+    --radius: 8px; --radius-lg: 14px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.35);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-glow: 0 0 0 1px rgba(79,147,240,0.15), 0 8px 32px rgba(79,147,240,0.10);
+    --focus-ring: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--accent);
+    --sidebar-w: 260px; --sidebar-collapsed: 56px;
+    --topbar-h: 56px;
+    --transition: 250ms ease;
+}
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-base); color: var(--text-primary); line-height: 1.6; min-height: 100vh; min-height: 100dvh; font-size: 14px; position: relative; }
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+        radial-gradient(900px circle at 12% -5%, rgba(79,147,240,0.10), transparent 45%),
+        radial-gradient(800px circle at 100% 0%, rgba(124,92,255,0.08), transparent 40%),
+        radial-gradient(700px circle at 50% 110%, rgba(79,147,240,0.05), transparent 50%); }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+button:focus-visible, a:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+a { color: var(--accent); text-decoration: none; }
+button { cursor: pointer; font-family: inherit; font-size: 14px; border: none; border-radius: var(--radius); padding: 10px 18px; transition: all var(--transition); min-height: 44px; }
+input, select, textarea { font-family: inherit; font-size: 14px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; outline: none; transition: border-color var(--transition), box-shadow var(--transition); width: 100%; min-height: 44px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3); }
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: inset 0 1px 3px rgba(0,0,0,0.3), 0 0 0 3px var(--accent-glow); }
+.btn-primary { background: var(--gradient-accent); color: #fff; font-weight: 600; box-shadow: 0 4px 14px rgba(79,147,240,0.30); }
+.btn-primary:hover { filter: brightness(1.08); box-shadow: 0 6px 20px rgba(79,147,240,0.42); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-danger { background: var(--danger); color: #fff; font-weight: 500; }
+.btn-danger:hover { background: var(--danger-hover); }
+.btn-outline { background: transparent; color: var(--text-primary); border: 1px solid var(--border); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm { padding: 6px 14px; font-size: 13px; min-height: 36px; }
+.btn-icon { display: inline-flex; align-items: center; gap: 6px; }
+.btn:disabled, button:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Login Page */
+.login-page { display: none; align-items: center; justify-content: center; min-height: 100vh; min-height: 100dvh; padding: 20px; position: relative; overflow: hidden; background: radial-gradient(1200px circle at 50% -10%, #15172a 0%, #0a0a0f 55%); }
+.login-page.active { display: flex; }
+.login-page::before { content: ''; position: absolute; width: 520px; height: 520px; border-radius: 50%; background: var(--gradient-accent); filter: blur(140px); opacity: 0.18; top: -120px; left: 50%; transform: translateX(-50%); animation: floatGlow 9s ease-in-out infinite; }
+@keyframes floatGlow { 0%,100% { transform: translateX(-50%) translateY(0); opacity: 0.16; } 50% { transform: translateX(-50%) translateY(30px); opacity: 0.24; } }
+.login-card { position: relative; background: linear-gradient(180deg, rgba(26,26,46,0.85), rgba(18,18,26,0.92)); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px; width: 100%; max-width: 420px; box-shadow: var(--shadow), var(--shadow-glow); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.login-card::before { content: ''; position: absolute; inset: 0; border-radius: var(--radius-lg); padding: 1px; background: linear-gradient(135deg, rgba(79,147,240,0.40), transparent 40%, transparent 60%, rgba(124,92,255,0.30)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+.login-branding { text-align: center; margin-bottom: 32px; }
+.login-branding img { filter: drop-shadow(0 4px 16px rgba(79,147,240,0.35)); }
+.login-branding h1 { font-size: 28px; font-weight: 700; letter-spacing: 1px; background: linear-gradient(135deg, #fff 0%, #a8c5f5 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.login-branding .brand-line { width: 48px; height: 3px; background: var(--gradient-accent); margin: 12px auto 0; border-radius: 2px; }
+.login-branding p { color: var(--text-secondary); font-size: 14px; margin-top: 10px; }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+.captcha-row { display: flex; gap: 10px; align-items: center; }
+.captcha-row input { flex: 1; }
+.captcha-img { height: 42px; border-radius: var(--radius); cursor: pointer; border: 1px solid var(--border); background: #fff; }
+.login-btn { width: 100%; padding: 12px; font-size: 15px; font-weight: 600; margin-top: 8px; }
+.login-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; }
+/* Dashboard Layout */
+.dashboard { display: none; min-height: 100vh; }
+.dashboard.active { display: block; }
+/* Topbar */
+.topbar { position: fixed; top: 0; right: 0; left: var(--sidebar-w); height: var(--topbar-h); background: rgba(18,18,26,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 90; transition: left var(--transition); }
+.topbar-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.topbar-title .breadcrumb-sep { color: var(--text-muted); font-weight: 400; }
+.topbar-title .breadcrumb-parent { color: var(--text-muted); font-weight: 400; font-size: 14px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.avatar-placeholder { width: 32px; height: 32px; border-radius: 50%; background: var(--gradient-accent); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; box-shadow: 0 2px 8px rgba(79,147,240,0.35); }
+.mobile-menu-btn { display: none; background: none; color: var(--text-primary); padding: 8px; min-height: unset; }
+/* Sidebar */
+.sidebar { width: var(--sidebar-w); background: rgba(18,18,26,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; transition: width var(--transition); overflow: hidden; }
+.sidebar.collapsed { width: var(--sidebar-collapsed); }
+.sidebar.collapsed ~ .topbar { left: var(--sidebar-collapsed); }
+.sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-collapsed); }
+.sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; min-height: var(--topbar-h); white-space: nowrap; overflow: hidden; }
+.sidebar-header h2 { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; transition: opacity var(--transition); background: linear-gradient(135deg, #fff 0%, #a8c5f5 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.sidebar.collapsed .sidebar-header h2 { opacity: 0; width: 0; }
+.sidebar-header .brand-logo { width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0; object-fit: contain; }
+.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; overflow-x: hidden; }
+.nav-section { margin-bottom: 8px; }
+.nav-section-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); padding: 8px 12px 4px; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; transition: opacity var(--transition); }
+.sidebar.collapsed .nav-section-title { opacity: 0; height: 0; padding: 0; margin: 0; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; font-size: 14px; margin-bottom: 2px; white-space: nowrap; text-decoration: none; position: relative; border-left: 3px solid transparent; }
+.nav-item:hover { background: var(--accent-light); color: var(--text-primary); transform: translateX(3px); }
+.nav-item.active { border-left-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 500; }
+.nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.nav-item .nav-label { transition: opacity var(--transition); overflow: hidden; }
+.sidebar.collapsed .nav-item .nav-label { opacity: 0; width: 0; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 10px 0; }
+.sidebar.collapsed .nav-item[data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; left: calc(var(--sidebar-collapsed) + 4px); top: 50%; transform: translateY(-50%); background: var(--bg-elevated); color: var(--text-primary); padding: 4px 10px; border-radius: var(--radius); font-size: 13px; white-space: nowrap; box-shadow: var(--shadow-sm); border: 1px solid var(--border); z-index: 200; }
+.sidebar-footer { padding: 8px; border-top: 1px solid var(--border); }
+.sidebar-footer .nav-item { color: var(--danger); border-left-color: transparent; }
+.sidebar-footer .nav-item:hover { background: rgba(217,79,79,0.08); }
+.sidebar-toggle-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: none; color: var(--text-muted); font-size: 13px; border-top: 1px solid var(--border); border-radius: 0; min-height: 40px; }
+.sidebar-toggle-btn:hover { color: var(--text-primary); background: var(--accent-light); }
+.sidebar-toggle-btn .toggle-label { transition: opacity var(--transition); }
+.sidebar.collapsed .sidebar-toggle-btn .toggle-label { opacity: 0; width: 0; overflow: hidden; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(2px); }
+.sidebar-overlay.open { display: block; }
+.main-content { margin-left: var(--sidebar-w); padding: 24px; padding-top: calc(var(--topbar-h) + 24px); min-height: 100vh; overflow-y: auto; transition: margin-left var(--transition); }
+.page-header { margin-bottom: 24px; }
+.page-header h1 { font-size: 20px; font-weight: 700; }
+.page-header p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+.content-section { display: none; }
+.content-section.active { display: block; animation: sectionIn 0.40s cubic-bezier(0.22,1,0.36,1); }
+@keyframes sectionIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 768px) {
+    .sidebar { width: var(--sidebar-w) !important; transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar.collapsed { width: var(--sidebar-w) !important; }
+    .sidebar .nav-item .nav-label { opacity: 1 !important; width: auto !important; }
+    .sidebar .sidebar-header h2 { opacity: 1 !important; width: auto !important; }
+    .sidebar .nav-section-title { opacity: 1 !important; height: auto !important; padding: 8px 12px 4px !important; }
+    .mobile-menu-btn { display: flex; }
+    .topbar { left: 0 !important; }
+    .main-content { margin-left: 0 !important; padding: 16px; padding-top: calc(var(--topbar-h) + 16px); }
+}
+/* Cards & Components */
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; transition: border-color 0.2s, box-shadow 0.2s; }
+.card:hover { border-color: var(--border-hover); box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.card-header h3 { font-size: 16px; font-weight: 600; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { position: relative; background: linear-gradient(180deg, var(--bg-elevated), var(--bg-card)); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 20px 20px 22px; overflow: hidden; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; }
+.stat-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--gradient-accent); }
+.stat-card:hover { transform: translateY(-2px); border-color: var(--border-hover); box-shadow: 0 8px 28px rgba(0,0,0,0.30); }
+.stat-card .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+.stat-card .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.stat-card .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; padding: 12px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+td { padding: 12px; border-bottom: 1px solid var(--border); }
+tr:nth-child(even) td { background: rgba(255,255,255,0.01); }
+tr:hover td { background: rgba(79,147,240,0.04); }
+.actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+/* Tags & Badges */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
+.badge-active { background: rgba(79,217,122,0.12); color: var(--success); }
+.badge-inactive { background: rgba(217,79,79,0.12); color: var(--danger); }
+/* Upload area */
+.upload-area { border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: var(--accent-light); }
+.upload-area svg { width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 12px; }
+.upload-area p { color: var(--text-secondary); font-size: 14px; }
+.upload-area .upload-hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+.upload-progress { margin-top: 16px; display: none; }
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; width: 0%; }
+.progress-text { font-size: 13px; color: var(--text-secondary); margin-top: 6px; text-align: center; }
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+.modal-overlay.open .modal { animation: modalIn 0.25s ease; }
+.modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.modal h3 { font-size: 18px; margin-bottom: 16px; font-weight: 600; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+/* Password toggle */
+.password-wrap { position: relative; }
+.password-wrap input { padding-right: 44px; }
+.password-toggle { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 42px; min-height: unset; padding: 0; background: transparent; color: var(--text-muted); display: flex; align-items: center; justify-content: center; border-radius: 0 var(--radius) var(--radius) 0; }
+.password-toggle:hover { color: var(--text-primary); }
+/* Toast */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+.toast { padding: 12px 20px; border-radius: var(--radius); font-size: 14px; box-shadow: var(--shadow); animation: toastIn 0.3s ease; max-width: 360px; }
+.toast-success { background: #0a2e1a; color: #a8f0c6; border: 1px solid #1a5c3a; }
+.toast-error { background: #2e0a0a; color: #f0a8a8; border: 1px solid #5c1a1a; }
+.toast-info { background: #1a1a2e; color: #c9c4b8; border: 1px solid var(--accent); }
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+/* Misc */
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 13px; }
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-4 { margin-bottom: 16px; }
+.flex { display: flex; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.mono { font-family: 'Consolas', 'Monaco', monospace; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+.ip-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-light); color: var(--accent); padding: 3px 10px; border-radius: 9999px; font-size: 13px; margin: 3px; }
+.ip-tag button { background: none; color: var(--accent); padding: 0; font-size: 16px; line-height: 1; min-height: unset; }
+.ip-tag button:hover { color: var(--danger); }
+.empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+.empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5; }
+.key-display { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: monospace; font-size: 13px; word-break: break-all; margin: 12px 0; user-select: all; }
+.signed-link-result { background: var(--bg-input); border: 1px solid var(--success); border-radius: var(--radius); padding: 12px; font-size: 13px; word-break: break-all; margin-top: 12px; }
+.config-item { display: grid; grid-template-columns: 180px 1fr; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.config-item:last-child { border-bottom: none; }
+.config-item label { font-size: 14px; font-weight: 500; }
+.config-item .config-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+@media (max-width: 768px) {
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .config-item { grid-template-columns: 1fr; }
+    .actions-cell { flex-direction: column; }
+}
+/* ===== Dynamic Effects ===== */
+/* 统计卡片错落入场 */
+@keyframes cardIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.stat-grid .stat-card { animation: cardIn 0.5s cubic-bezier(0.22,1,0.36,1) backwards; }
+.stat-grid .stat-card:nth-child(1) { animation-delay: 0.00s; }
+.stat-grid .stat-card:nth-child(2) { animation-delay: 0.07s; }
+.stat-grid .stat-card:nth-child(3) { animation-delay: 0.14s; }
+.stat-grid .stat-card:nth-child(4) { animation-delay: 0.21s; }
+/* 卡片悬停时辉光扫过 */
+.stat-card::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.06), transparent); transform: skewX(-20deg); transition: left 0.7s ease; pointer-events: none; }
+.stat-card:hover::after { left: 130%; }
+/* 表格行入场 */
+@keyframes rowIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+tbody tr { animation: rowIn 0.35s ease backwards; }
+tbody tr:nth-child(1){animation-delay:.02s} tbody tr:nth-child(2){animation-delay:.05s} tbody tr:nth-child(3){animation-delay:.08s}
+tbody tr:nth-child(4){animation-delay:.11s} tbody tr:nth-child(5){animation-delay:.14s} tbody tr:nth-child(n+6){animation-delay:.16s}
+/* 主按钮高光扫过 */
+.btn-primary { position: relative; overflow: hidden; }
+.btn-primary::after { content: ''; position: absolute; top: 0; left: -120%; width: 60%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.30), transparent); transform: skewX(-20deg); transition: left 0.6s ease; }
+.btn-primary:hover::after { left: 130%; }
+/* 进度条流动条纹 */
+.progress-fill { background-image: linear-gradient(90deg, rgba(255,255,255,0.18) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.18) 75%, transparent 75%); background-size: 28px 28px; animation: progressStripes 1s linear infinite; }
+@keyframes progressStripes { from { background-position: 0 0; } to { background-position: 28px 0; } }
+/* 品牌 logo 轻微呼吸 */
+@keyframes brandPulse { 0%,100% { filter: drop-shadow(0 4px 16px rgba(79,147,240,0.30)); } 50% { filter: drop-shadow(0 4px 22px rgba(124,92,255,0.50)); } }
+.login-branding img { animation: brandPulse 4s ease-in-out infinite; }
+/* 导航激活态左条生长 */
+.nav-item::before { content: ''; position: absolute; left: -3px; top: 50%; width: 3px; height: 0; background: var(--gradient-accent); border-radius: 2px; transform: translateY(-50%); transition: height 0.25s ease; }
+.nav-item.active::before { height: 60%; }
+/* 模态出场更顺滑（叠加已有 modalIn） */
+.toast { will-change: transform, opacity; }
+/* 头像悬停旋转光环 */
+.avatar-placeholder { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.avatar-placeholder:hover { transform: scale(1.08) rotate(4deg); box-shadow: 0 4px 16px rgba(79,147,240,0.55); }
+/* 上传区拖拽脉冲 */
+@keyframes dragPulse { 0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); } 50% { box-shadow: 0 0 0 8px transparent; } }
+.upload-area.dragover { animation: dragPulse 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .stat-grid .stat-card, tbody tr, .login-branding img, .progress-fill, .upload-area.dragover { animation: none !important; }
+    .stat-card::after, .btn-primary::after { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="loginPage" class="login-page">
+    <div class="login-card">
+        <div class="login-branding">
+            <img src="/static/logo.png" alt="ArcartX" style="width:64px;height:64px;margin-bottom:16px;">
+            <h1>资源后端</h1>
+            <div class="brand-line"></div>
+            <p>管理员控制台</p>
+        </div>
+        <form id="loginForm" onsubmit="return false;">
+            <div class="form-group">
+                <label for="loginUsername">用户名</label>
+                <input type="text" id="loginUsername" placeholder="请输入用户名" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">密码</label>
+                <div class="password-wrap">
+                    <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password" required>
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="显示密码">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="loginCaptcha">验证码</label>
+                <div class="captcha-row">
+                    <input type="text" id="loginCaptcha" placeholder="请输入验证码" autocomplete="off" required>
+                    <img id="captchaImg" class="captcha-img" alt="验证码" title="点击刷新" onclick="loadCaptcha()" role="img">
+                </div>
+            </div>
+            <button type="submit" class="btn-primary login-btn" id="loginBtn" onclick="doLogin()">登 录</button>
+            <div id="loginError" class="login-error" role="alert" aria-live="polite"></div>
+        </form>
+    </div>
+</div>
+<div id="dashboard" class="dashboard">
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+    <aside id="sidebar" class="sidebar" aria-label="主导航">
+        <div class="sidebar-header">
+            <img src="/static/logo.png" alt="ArcartX" class="brand-logo">
+            <h2>资源后端</h2>
+        </div>
+        <nav class="sidebar-nav" role="navigation" aria-label="主导航">
+            <div class="nav-section">
+                <div class="nav-section-title">概览</div>
+                <a class="nav-item active" href="#/traffic" data-section="traffic" data-tooltip="流量监控" tabindex="0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span class="nav-label">流量监控</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">文件管理</div>
+                <a class="nav-item" href="#/files" data-section="files" data-tooltip="文件列表" tabindex="0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span class="nav-label">文件列表</span>
+                </a>
+                <a class="nav-item" href="#/upload" data-section="upload" data-tooltip="文件上传" tabindex="0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span class="nav-label">文件上传</span>
+                </a>
+                <a class="nav-item" href="#/signed" data-section="signed" data-tooltip="签名链接" tabindex="0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <span class="nav-label">签名链接</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">系统管理</div>
+                <a class="nav-item" href="#/apikeys" data-section="apikeys" data-tooltip="API 密钥" tabindex="0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    <span class="nav-label">API 密钥</span>
+                </a>
+                <a class="nav-item" href="#/config" data-section="config" data-tooltip="系统配置" tabindex="0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span class="nav-label">系统配置</span>
+                </a>
+                <a class="nav-item" href="#/password" data-section="password" data-tooltip="修改密码" tabindex="0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span class="nav-label">修改密码</span>
+                </a>
+                <a class="nav-item" href="#/totp" data-section="totp" data-tooltip="两步验证" tabindex="0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span class="nav-label">两步验证</span>
+                </a>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <a class="nav-item" href="javascript:void(0)" onclick="doLogout()" data-tooltip="退出登录" tabindex="0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span class="nav-label">退出登录</span>
+            </a>
+        </div>
+        <button class="sidebar-toggle-btn" onclick="toggleSidebarCollapse()" aria-label="折叠侧边栏">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <span class="toggle-label">收起</span>
+        </button>
+    </aside>
+    <div class="topbar" id="topbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="打开菜单">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            </button>
+            <div class="topbar-title">
+                <span class="breadcrumb-parent">管理面板</span>
+                <span class="breadcrumb-sep">/</span>
+                <span id="topbarPageTitle">流量监控</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="avatar-placeholder">A</div>
+        </div>
+    </div>
+    <main class="main-content" id="mainContent" role="main" aria-label="主内容区">
+        <div id="section-traffic" class="content-section active">
+            <div class="page-header"><h1>流量监控</h1><p>查看今日 API 流量使用情况</p></div>
+            <div id="trafficStats" class="stat-grid"></div>
+        </div>
+        <div id="section-files" class="content-section">
+            <div class="page-header flex-between">
+                <div><h1>文件列表</h1><p>管理已上传的资源文件</p></div>
+                <button class="btn-primary btn-icon" onclick="loadFiles()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    刷新
+                </button>
+            </div>
+            <div class="card">
+                <div id="fileSummary" class="text-sm text-muted mb-4"></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>文件名</th><th>大小</th><th>CRC64</th><th>上传时间</th><th>操作</th></tr></thead>
+                        <tbody id="fileTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="fileEmpty" class="empty-state" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <p>暂无文件</p>
+                </div>
+            </div>
+        </div>
+        <div id="section-upload" class="content-section">
+            <div class="page-header"><h1>文件上传</h1><p>上传资源文件到服务器</p></div>
+            <div class="card">
+                <div id="uploadArea" class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <p>点击或拖拽文件到此处上传</p>
+                    <p class="upload-hint">仅支持 ZIP 格式文件</p>
+                </div>
+                <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect(event)">
+                <div id="uploadProgress" class="upload-progress">
+                    <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+                    <div id="progressText" class="progress-text"></div>
+                </div>
+            </div>
+        </div>
+        <div id="section-signed" class="content-section">
+            <div class="page-header"><h1>签名链接</h1><p>生成带有效期和下载次数限制的签名下载链接</p></div>
+            <div class="card">
+                <div class="form-group">
+                    <label for="signedFileName">文件名</label>
+                    <select id="signedFileName"></select>
+                </div>
+                <div class="form-group">
+                    <label for="signedExpiration">有效期（分钟）</label>
+                    <input type="number" id="signedExpiration" value="60" min="1" max="10080">
+                </div>
+                <div class="form-group">
+                    <label for="signedLimit">下载次数限制</label>
+                    <input type="number" id="signedLimit" value="3" min="1" max="100">
+                </div>
+                <button class="btn-primary" onclick="generateSignedLink()">生成签名链接</button>
+                <div id="signedResult" style="display:none;">
+                    <div class="signed-link-result">
+                        <div class="flex-between">
+                            <span class="text-sm" style="color:var(--success);">链接已生成</span>
+                            <button class="btn-sm btn-outline" onclick="copySignedLink()">复制</button>
+                        </div>
+                        <div id="signedLinkUrl" class="mt-2 mono text-sm" style="word-break:break-all;"></div>
+                        <div id="signedLinkMeta" class="mt-2 text-sm text-muted"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="section-apikeys" class="content-section">
+            <div class="page-header flex-between">
+                <div><h1>API 密钥管理</h1><p>管理 API 访问密钥及 IP 白名单</p></div>
+                <button class="btn-primary btn-icon" onclick="showCreateKeyModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    创建密钥
+                </button>
+            </div>
+            <div class="card">
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>名称</th><th>密钥前缀</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+                        <tbody id="keyTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="keyEmpty" class="empty-state" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    <p>暂无 API 密钥</p>
+                </div>
+            </div>
+        </div>
+        <div id="section-config" class="content-section">
+            <div class="page-header"><h1>系统配置</h1><p>管理系统运行参数</p></div>
+            <div class="card">
+                <div id="configList"></div>
+                <div class="mt-4">
+                    <button class="btn-primary" onclick="saveConfig()">保存配置</button>
+                </div>
+            </div>
+        </div>
+        <div id="section-password" class="content-section">
+            <div class="page-header"><h1>修改密码</h1><p>更改管理员登录密码</p></div>
+            <div class="card" style="max-width:480px;">
+                <div class="form-group">
+                    <label for="currentPassword">当前密码</label>
+                    <div class="password-wrap">
+                        <input type="password" id="currentPassword" placeholder="请输入当前密码">
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('currentPassword', this)" aria-label="显示密码">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">新密码</label>
+                    <div class="password-wrap">
+                        <input type="password" id="newPassword" placeholder="至少 8 位，包含字母和数字">
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('newPassword', this)" aria-label="显示密码">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">确认新密码</label>
+                    <div class="password-wrap">
+                        <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('confirmPassword', this)" aria-label="显示密码">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="changePassword()">修改密码</button>
+            </div>
+        </div>
+        <div id="section-totp" class="content-section">
+            <div class="page-header"><h1>两步验证</h1><p>使用 TOTP 验证器应用增强账户安全</p></div>
+            <div id="totpContent" class="card" style="max-width:560px;">
+                <div id="totpLoading" class="text-muted text-sm">加载中...</div>
+            </div>
+        </div>
+    </main>
+</div>
+<div id="createKeyModal" class="modal-overlay">
+    <div class="modal">
+        <h3>创建 API 密钥</h3>
+        <div class="form-group">
+            <label for="newKeyName">密钥名称</label>
+            <input type="text" id="newKeyName" placeholder="例如：生产环境密钥">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeModal('createKeyModal')">取消</button>
+            <button class="btn-primary" onclick="createApiKey()">创建</button>
+        </div>
+    </div>
+</div>
+<div id="showKeyModal" class="modal-overlay">
+    <div class="modal">
+        <h3 id="showKeyTitle">API 密钥</h3>
+        <p class="text-sm" style="color:var(--warning);">请立即复制并妥善保存此密钥，关闭后将无法再次查看完整密钥。</p>
+        <div id="showKeyValue" class="key-display"></div>
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="copyKeyValue()">复制密钥</button>
+            <button class="btn-outline" onclick="closeModal('showKeyModal')">关闭</button>
+        </div>
+    </div>
+</div>
+<div id="whitelistModal" class="modal-overlay">
+    <div class="modal">
+        <h3>IP 白名单管理</h3>
+        <p class="text-sm text-muted mb-4" id="whitelistKeyName"></p>
+        <div id="whitelistTags" style="min-height:40px;margin-bottom:12px;"></div>
+        <div class="flex gap-2">
+            <input type="text" id="newIpInput" placeholder="输入 IP 地址，如 192.168.1.1" style="flex:1;" onkeydown="if(event.key==='Enter')addIpToWhitelist()">
+            <button class="btn-primary btn-sm" onclick="addIpToWhitelist()">添加</button>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeModal('whitelistModal')">取消</button>
+            <button class="btn-primary" onclick="saveWhitelist()">保存</button>
+        </div>
+    </div>
+</div>
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal">
+        <h3 id="confirmTitle">确认操作</h3>
+        <p id="confirmMessage"></p>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeModal('confirmModal')">取消</button>
+            <button class="btn-danger" id="confirmBtn" onclick="">确认</button>
+        </div>
+    </div>
+</div>
+<div id="totpVerifyModal" class="modal-overlay">
+    <div class="modal">
+        <h3>两步验证</h3>
+        <p class="text-sm text-muted mb-4">请打开验证器应用，输入 6 位动态验证码</p>
+        <div class="form-group">
+            <label for="totpCodeInput">验证码</label>
+            <input type="text" id="totpCodeInput" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric" style="text-align:center;font-size:24px;letter-spacing:8px;font-family:monospace;" onkeydown="if(event.key==='Enter')verify2FA()">
+        </div>
+        <div id="totpVerifyError" class="login-error" role="alert" aria-live="polite"></div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeModal('totpVerifyModal');loadCaptcha();">取消</button>
+            <button class="btn-primary" id="totpVerifyBtn" onclick="verify2FA()">验证</button>
+        </div>
+    </div>
+</div>
+<div id="totpSetupModal" class="modal-overlay">
+    <div class="modal" style="max-width:460px;">
+        <h3>设置两步验证</h3>
+        <p class="text-sm text-muted mb-4">使用 Google Authenticator、Microsoft Authenticator 或其他 TOTP 应用扫描下方二维码</p>
+        <div style="text-align:center;margin:16px 0;">
+            <img id="totpSetupQR" alt="QR Code" style="width:200px;height:200px;border-radius:8px;border:1px solid var(--border);background:#fff;">
+        </div>
+        <p class="text-sm text-muted" style="text-align:center;">无法扫码？手动输入密钥：</p>
+        <div class="key-display" id="totpSetupSecret" style="text-align:center;font-size:14px;letter-spacing:2px;"></div>
+        <div class="form-group mt-4">
+            <label for="totpSetupCode">输入验证器中的 6 位验证码以确认</label>
+            <input type="text" id="totpSetupCode" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric" style="text-align:center;font-size:20px;letter-spacing:6px;font-family:monospace;" onkeydown="if(event.key==='Enter')confirmEnable2FA()">
+        </div>
+        <div id="totpSetupError" class="login-error" role="alert" aria-live="polite"></div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeModal('totpSetupModal')">取消</button>
+            <button class="btn-primary" onclick="confirmEnable2FA()">启用</button>
+        </div>
+    </div>
+</div>
+<div id="disable2FAModal" class="modal-overlay">
+    <div class="modal">
+        <h3>关闭两步验证</h3>
+        <p class="text-sm" style="color:var(--warning);">关闭后登录将不再需要验证码，账户安全性会降低。</p>
+        <div class="form-group mt-4">
+            <label for="disable2FAPassword">请输入密码确认</label>
+            <div class="password-wrap">
+                <input type="password" id="disable2FAPassword" placeholder="请输入当前密码" onkeydown="if(event.key==='Enter')confirmDisable2FA()">
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('disable2FAPassword', this)" aria-label="显示密码">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+            </div>
+        </div>
+        <div id="disable2FAError" class="login-error" role="alert" aria-live="polite"></div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeModal('disable2FAModal')">取消</button>
+            <button class="btn-danger" onclick="confirmDisable2FA()">确认关闭</button>
+        </div>
+    </div>
+</div>
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+<script>
+// ===== State & Helpers =====
+let authToken = localStorage.getItem('arcartx_token') || '';
+let captchaId = '';
+let currentWhitelistKeyId = null;
+let currentWhitelistIps = [];
+let pending2FAToken = '';
+let totpSetupSecret = '';
+
+const ROUTE_TITLES = {
+    'traffic': '流量监控', 'files': '文件列表', 'upload': '文件上传',
+    'signed': '签名链接', 'apikeys': 'API 密钥管理', 'config': '系统配置',
+    'password': '修改密码', 'totp': '两步验证'
+};
+
+const API = {
+    async request(url, options = {}) {
+        const headers = options.headers || {};
+        if (authToken && !headers['Authorization']) headers['Authorization'] = 'Bearer ' + authToken;
+        if (options.body && !(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(options.body);
+        }
+        try {
+            const res = await fetch(url, { ...options, headers });
+            if (res.status === 401) { doLogout(); throw new Error('登录已过期'); }
+            return await res.json();
+        } catch (e) {
+            if (e.message === '登录已过期') throw e;
+            throw new Error('网络请求失败: ' + e.message);
+        }
+    },
+    get(url) { return this.request(url); },
+    post(url, body) { return this.request(url, { method: 'POST', body }); },
+    del(url) { return this.request(url, { method: 'DELETE' }); },
+    upload(url, formData, onProgress) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url);
+            if (authToken) xhr.setRequestHeader('Authorization', 'Bearer ' + authToken);
+            xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(e.loaded, e.total); };
+            xhr.onload = () => { try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error('解析响应失败')); } };
+            xhr.onerror = () => reject(new Error('上传失败'));
+            xhr.send(formData);
+        });
+    }
+};
+
+function toast(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+function formatSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 2 : 0) + ' ' + units[i];
+}
+
+function formatTime(ts) {
+    if (!ts) return '-';
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return ts;
+    return d.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function showConfirm(title, message, onConfirm) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmBtn').onclick = () => { closeModal('confirmModal'); onConfirm(); };
+    openModal('confirmModal');
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btn.setAttribute('aria-label', isPassword ? '隐藏密码' : '显示密码');
+    btn.innerHTML = isPassword
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+// ===== Auth =====
+async function loadCaptcha() {
+    try {
+        const data = await API.get('/api/auth/captcha');
+        if (data.success) {
+            captchaId = data.captchaId;
+            document.getElementById('captchaImg').src = data.captchaImage;
+        } else {
+            toast(data.message || '获取验证码失败', 'error');
+        }
+    } catch (e) {
+        toast('获取验证码失败', 'error');
+    }
+}
+
+async function doLogin() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const captcha = document.getElementById('loginCaptcha').value.trim();
+    const errorEl = document.getElementById('loginError');
+    errorEl.textContent = '';
+    if (!username || !password || !captcha) { errorEl.textContent = '请填写所有字段'; return; }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = '登录中...';
+    try {
+        const data = await API.post('/api/auth/login', { username, password, captcha, captchaId });
+        if (data.success) {
+            if (data.requires2FA) {
+                pending2FAToken = data.challengeToken;
+                document.getElementById('totpCodeInput').value = '';
+                document.getElementById('totpVerifyError').textContent = '';
+                openModal('totpVerifyModal');
+            } else {
+                authToken = data.token;
+                localStorage.setItem('arcartx_token', authToken);
+                showDashboard();
+                if (data.mustChangePassword) {
+                    toast('请立即修改默认密码', 'error');
+                    location.hash = '#/password';
+                } else {
+                    toast('登录成功', 'success');
+                }
+            }
+        } else {
+            errorEl.textContent = data.message || '登录失败';
+            loadCaptcha();
+        }
+    } catch (e) {
+        errorEl.textContent = '登录请求失败';
+        loadCaptcha();
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '登 录';
+    }
+}
+
+async function verify2FA() {
+    const code = document.getElementById('totpCodeInput').value.trim();
+    const errorEl = document.getElementById('totpVerifyError');
+    errorEl.textContent = '';
+    if (!code || code.length !== 6) { errorEl.textContent = '请输入6位验证码'; return; }
+    const btn = document.getElementById('totpVerifyBtn');
+    btn.disabled = true;
+    btn.textContent = '验证中...';
+    try {
+        const data = await API.post('/api/auth/2fa/verify', { challengeToken: pending2FAToken, code });
+        if (data.success && data.token) {
+            closeModal('totpVerifyModal');
+            authToken = data.token;
+            localStorage.setItem('arcartx_token', authToken);
+            showDashboard();
+            if (data.mustChangePassword) {
+                toast('请立即修改默认密码', 'error');
+                location.hash = '#/password';
+            } else {
+                toast('登录成功', 'success');
+            }
+        } else {
+            errorEl.textContent = data.message || data.error || '验证失败';
+        }
+    } catch (e) {
+        errorEl.textContent = '验证请求失败';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '验证';
+    }
+}
+
+function doLogout() {
+    authToken = '';
+    localStorage.removeItem('arcartx_token');
+    document.getElementById('dashboard').classList.remove('active');
+    document.getElementById('loginPage').classList.add('active');
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginCaptcha').value = '';
+    window.location.hash = '#/login';
+    loadCaptcha();
+}
+
+async function validateToken() {
+    if (!authToken) return false;
+    try {
+        const data = await API.post('/api/auth/validate');
+        return data.success === true;
+    } catch { return false; }
+}
+// ===== Hash Routing & Navigation =====
+function navigateTo(section) {
+    if (!ROUTE_TITLES[section]) section = 'traffic';
+    // Update nav items
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(n => n.classList.remove('active'));
+    const activeNav = document.querySelector(`.nav-item[data-section="${section}"]`);
+    if (activeNav) activeNav.classList.add('active');
+    // Update content sections
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    const sectionEl = document.getElementById('section-' + section);
+    if (sectionEl) sectionEl.classList.add('active');
+    // Update topbar title
+    document.getElementById('topbarPageTitle').textContent = ROUTE_TITLES[section] || section;
+    // Load data for section
+    if (section === 'traffic') loadTrafficStats();
+    if (section === 'files') loadFiles();
+    if (section === 'apikeys') loadApiKeys();
+    if (section === 'config') loadConfig();
+    if (section === 'signed') loadFileOptions();
+    if (section === 'totp') loadTOTPStatus();
+    // Close mobile sidebar
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+function handleHashChange() {
+    const hash = window.location.hash || '#/login';
+    const route = hash.replace('#/', '');
+    if (route === 'login' || !authToken) {
+        if (authToken) {
+            // Logged in but navigated to login, redirect to traffic
+            window.location.hash = '#/traffic';
+            return;
+        }
+        document.getElementById('dashboard').classList.remove('active');
+        document.getElementById('loginPage').classList.add('active');
+        return;
+    }
+    document.getElementById('loginPage').classList.remove('active');
+    document.getElementById('dashboard').classList.add('active');
+    navigateTo(route);
+}
+
+window.addEventListener('hashchange', handleHashChange);
+
+function showDashboard() {
+    document.getElementById('loginPage').classList.remove('active');
+    document.getElementById('dashboard').classList.add('active');
+    const hash = window.location.hash || '';
+    const route = hash.replace('#/', '');
+    if (!route || route === 'login' || !ROUTE_TITLES[route]) {
+        window.location.hash = '#/traffic';
+    } else {
+        navigateTo(route);
+    }
+}
+
+// ===== Sidebar =====
+function toggleSidebarCollapse() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('collapsed');
+    const btn = sidebar.querySelector('.sidebar-toggle-btn');
+    const svg = btn.querySelector('svg');
+    if (sidebar.classList.contains('collapsed')) {
+        svg.innerHTML = '<polyline points="9 18 15 12 9 6"/>';
+    } else {
+        svg.innerHTML = '<polyline points="15 18 9 12 15 6"/>';
+    }
+    localStorage.setItem('arcartx_sidebar_collapsed', sidebar.classList.contains('collapsed'));
+}
+
+function toggleMobileSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+// ===== Traffic Stats =====
+async function loadTrafficStats() {
+    try {
+        const data = await API.get('/api/admin/traffic-stats');
+        if (data.success) {
+            const s = data.data;
+            const usagePercent = s.dailyLimit > 0 ? Math.min(100, (s.todayBytes / s.dailyLimit) * 100).toFixed(1) : 0;
+            const progressColor = s.isLimitExceeded ? 'var(--danger)' : parseFloat(usagePercent) > 80 ? 'var(--warning)' : 'var(--accent)';
+            document.getElementById('trafficStats').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">今日流量</div>
+                    <div class="stat-value">${s.todayGB != null ? Number(s.todayGB).toFixed(3) : Number(s.todayMB).toFixed(2)} ${s.todayGB != null ? 'GB' : 'MB'}</div>
+                    <div class="stat-sub">${s.todayCount || 0} 次下载</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">每日限额</div>
+                    <div class="stat-value">${s.dailyLimitGB != null ? Number(s.dailyLimitGB).toFixed(1) : '-'} GB</div>
+                    <div class="stat-sub">已使用 ${usagePercent}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">剩余额度</div>
+                    <div class="stat-value" style="color:${s.isLimitExceeded ? 'var(--danger)' : 'var(--success)'};">${s.remainingGB != null ? Number(s.remainingGB).toFixed(3) : '-'} GB</div>
+                    <div class="stat-sub">${s.isLimitExceeded ? '已超出限额' : '状态正常'}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">使用进度</div>
+                    <div style="margin-top:12px;">
+                        <div class="progress-bar" style="height:10px;border-radius:5px;">
+                            <div class="progress-fill" style="width:${usagePercent}%;background:${progressColor};border-radius:5px;"></div>
+                        </div>
+                    </div>
+                    <div class="stat-sub mt-2">${formatSize(s.todayBytes || 0)} / ${formatSize(s.dailyLimit || 0)}</div>
+                </div>
+            `;
+        }
+    } catch (e) {
+        toast('加载流量统计失败', 'error');
+    }
+}
+// ===== File Management =====
+let fileList = [];
+
+async function loadFiles() {
+    try {
+        const data = await API.get('/api/files/list');
+        if (data.success) {
+            fileList = data.data.files || [];
+            const tbody = document.getElementById('fileTableBody');
+            const empty = document.getElementById('fileEmpty');
+            document.getElementById('fileSummary').textContent = `共 ${data.data.totalCount || 0} 个文件，总大小 ${formatSize(data.data.totalSize || 0)}`;
+            if (fileList.length === 0) {
+                tbody.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+            tbody.innerHTML = fileList.map(f => `
+                <tr>
+                    <td><span class="truncate" title="${escapeHtml(f.fileName)}">${escapeHtml(f.fileName)}</span></td>
+                    <td style="white-space:nowrap;">${formatSize(f.fileSize)}</td>
+                    <td><span class="mono text-sm">${f.crc64 ? f.crc64.substring(0, 12) + '...' : '-'}</span></td>
+                    <td style="white-space:nowrap;">${formatTime(f.uploadedAt || f.lastModified)}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <button class="btn-sm btn-outline" data-action="signed-link" data-name="${escapeHtml(f.fileName)}">签名链接</button>
+                            <button class="btn-sm btn-danger" data-action="delete-file" data-name="${escapeHtml(f.fileName)}">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        toast('加载文件列表失败', 'error');
+    }
+}
+
+function confirmDeleteFile(fileName) {
+    showConfirm('删除文件', `确定要删除文件 "${fileName}" 吗？此操作不可恢复。`, () => deleteFile(fileName));
+}
+
+async function deleteFile(fileName) {
+    try {
+        const data = await API.del('/api/files/' + encodeURIComponent(fileName));
+        if (data.success) { toast('文件已删除', 'success'); loadFiles(); }
+        else { toast(data.message || '删除失败', 'error'); }
+    } catch (e) { toast('删除文件失败', 'error'); }
+}
+
+function generateSignedLinkFor(fileName) {
+    window.location.hash = '#/signed';
+    setTimeout(() => {
+        loadFileOptions().then(() => {
+            document.getElementById('signedFileName').value = fileName;
+        });
+    }, 50);
+}
+// ===== File Upload =====
+function initUploadArea() {
+    const area = document.getElementById('uploadArea');
+    if (!area) return;
+    area.addEventListener('dragover', (e) => { e.preventDefault(); area.classList.add('dragover'); });
+    area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+    area.addEventListener('drop', (e) => {
+        e.preventDefault();
+        area.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) uploadFile(e.dataTransfer.files[0]);
+    });
+}
+
+function handleFileSelect(e) {
+    if (e.target.files.length > 0) uploadFile(e.target.files[0]);
+}
+
+async function uploadFile(file) {
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    progressDiv.style.display = 'block';
+    progressFill.style.width = '0%';
+    progressText.textContent = '准备上传...';
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+        const data = await API.upload('/api/files/upload', formData, (loaded, total) => {
+            const pct = Math.round((loaded / total) * 100);
+            progressFill.style.width = pct + '%';
+            progressText.textContent = `上传中 ${pct}% - ${formatSize(loaded)} / ${formatSize(total)}`;
+        });
+        if (data.success) {
+            progressFill.style.width = '100%';
+            progressFill.style.background = 'var(--success)';
+            progressText.textContent = `上传成功: ${data.data.fileName} (${formatSize(data.data.fileSize)})`;
+            toast('文件上传成功', 'success');
+        } else {
+            progressFill.style.background = 'var(--danger)';
+            progressText.textContent = data.data?.message || data.message || '上传失败';
+            toast(data.data?.message || data.message || '上传失败', 'error');
+        }
+    } catch (e) {
+        progressFill.style.background = 'var(--danger)';
+        progressText.textContent = '上传失败: ' + e.message;
+        toast('上传失败', 'error');
+    }
+    document.getElementById('fileInput').value = '';
+    setTimeout(() => { progressFill.style.background = ''; }, 5000);
+}
+
+// ===== Signed Link =====
+async function loadFileOptions() {
+    try {
+        const data = await API.get('/api/files/list');
+        const select = document.getElementById('signedFileName');
+        select.innerHTML = '';
+        if (data.success && data.data.files) {
+            data.data.files.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.fileName;
+                opt.textContent = f.fileName;
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) { /* ignore */ }
+}
+
+async function generateSignedLink() {
+    const fileName = document.getElementById('signedFileName').value;
+    const expirationMinutes = parseInt(document.getElementById('signedExpiration').value) || 60;
+    const downloadLimit = parseInt(document.getElementById('signedLimit').value) || 0;
+    if (!fileName) { toast('请选择文件', 'error'); return; }
+    try {
+        const data = await API.post('/api/files/generate-signed-link', { fileName, expirationMinutes, downloadLimit });
+        if (data.success && data.data.success) {
+            const result = document.getElementById('signedResult');
+            result.style.display = 'block';
+            document.getElementById('signedLinkUrl').textContent = data.data.downloadUrl;
+            const meta = [];
+            if (data.data.expiresAt) meta.push('过期时间: ' + formatTime(data.data.expiresAt));
+            if (data.data.downloadLimit) meta.push('下载限制: ' + data.data.downloadLimit + ' 次');
+            document.getElementById('signedLinkMeta').textContent = meta.join(' | ');
+            toast('签名链接已生成', 'success');
+        } else {
+            toast(data.data?.message || data.message || '生成失败', 'error');
+        }
+    } catch (e) { toast('生成签名链接失败', 'error'); }
+}
+
+function copySignedLink() {
+    const url = document.getElementById('signedLinkUrl').textContent;
+    navigator.clipboard.writeText(url).then(() => toast('链接已复制', 'success')).catch(() => toast('复制失败', 'error'));
+}
+// ===== API Key Management =====
+async function loadApiKeys() {
+    try {
+        const data = await API.get('/api/admin/keys/list');
+        if (data.success) {
+            const keys = data.data.keys || [];
+            const tbody = document.getElementById('keyTableBody');
+            const empty = document.getElementById('keyEmpty');
+            if (keys.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+            tbody.innerHTML = keys.map(k => `
+                <tr>
+                    <td>${escapeHtml(k.keyName)}</td>
+                    <td><span class="mono text-sm">${escapeHtml(k.keyPrefix || '-')}...</span></td>
+                    <td><span class="badge ${k.isActive ? 'badge-active' : 'badge-inactive'}">${k.isActive ? '启用' : '禁用'}</span></td>
+                    <td style="white-space:nowrap;">${formatTime(k.createdAt)}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <button class="btn-sm btn-outline" data-action="whitelist" data-id="${k.id}" data-name="${escapeHtml(k.keyName)}">IP 白名单</button>
+                            <button class="btn-sm btn-outline" data-action="reset-key" data-id="${k.id}" data-name="${escapeHtml(k.keyName)}">重置</button>
+                            <button class="btn-sm btn-danger" data-action="delete-key" data-id="${k.id}" data-name="${escapeHtml(k.keyName)}">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) { toast('加载 API 密钥列表失败', 'error'); }
+}
+
+function showCreateKeyModal() {
+    document.getElementById('newKeyName').value = '';
+    openModal('createKeyModal');
+}
+
+async function createApiKey() {
+    const name = document.getElementById('newKeyName').value.trim();
+    if (!name) { toast('请输入密钥名称', 'error'); return; }
+    try {
+        const data = await API.post('/api/admin/keys/create', { name });
+        if (data.success && data.data.success) {
+            closeModal('createKeyModal');
+            document.getElementById('showKeyTitle').textContent = '新密钥已创建';
+            document.getElementById('showKeyValue').textContent = data.data.apiKey;
+            openModal('showKeyModal');
+            loadApiKeys();
+        } else { toast(data.data?.message || data.message || '创建失败', 'error'); }
+    } catch (e) { toast('创建 API 密钥失败', 'error'); }
+}
+
+function confirmResetKey(id, name) {
+    showConfirm('重置密钥', `确定要重置密钥 "${name}" 吗？旧密钥将立即失效。`, () => resetApiKey(id));
+}
+
+async function resetApiKey(id) {
+    try {
+        const data = await API.post('/api/admin/key/reset/' + id);
+        if (data.success && data.data.success) {
+            document.getElementById('showKeyTitle').textContent = '密钥已重置';
+            document.getElementById('showKeyValue').textContent = data.data.apiKey;
+            openModal('showKeyModal');
+            loadApiKeys();
+        } else { toast(data.data?.message || data.message || '重置失败', 'error'); }
+    } catch (e) { toast('重置密钥失败', 'error'); }
+}
+
+function confirmDeleteKey(id, name) {
+    showConfirm('删除密钥', `确定要删除密钥 "${name}" 吗？此操作不可恢复。`, () => deleteApiKey(id));
+}
+
+async function deleteApiKey(id) {
+    try {
+        const data = await API.del('/api/admin/key/' + id);
+        if (data.success) { toast('密钥已删除', 'success'); loadApiKeys(); }
+        else { toast(data.message || '删除失败', 'error'); }
+    } catch (e) { toast('删除密钥失败', 'error'); }
+}
+
+function copyKeyValue() {
+    const key = document.getElementById('showKeyValue').textContent;
+    navigator.clipboard.writeText(key).then(() => toast('密钥已复制', 'success')).catch(() => toast('复制失败', 'error'));
+}
+
+// ===== IP Whitelist =====
+async function showWhitelistModal(keyId, keyName) {
+    currentWhitelistKeyId = keyId;
+    document.getElementById('whitelistKeyName').textContent = '密钥: ' + keyName;
+    document.getElementById('newIpInput').value = '';
+    currentWhitelistIps = [];
+    try {
+        const data = await API.get('/api/admin/key/' + keyId + '/whitelist');
+        if (data.success) currentWhitelistIps = data.data.ipWhitelist || [];
+    } catch (e) { /* ignore */ }
+    renderWhitelistTags();
+    openModal('whitelistModal');
+}
+
+function renderWhitelistTags() {
+    const container = document.getElementById('whitelistTags');
+    if (currentWhitelistIps.length === 0) {
+        container.innerHTML = '<span class="text-sm text-muted">暂无 IP 白名单（允许所有 IP 访问）</span>';
+        return;
+    }
+    container.innerHTML = currentWhitelistIps.map((ip, i) =>
+        `<span class="ip-tag">${escapeHtml(ip)}<button onclick="removeIpFromWhitelist(${i})">&times;</button></span>`
+    ).join('');
+}
+
+function addIpToWhitelist() {
+    const input = document.getElementById('newIpInput');
+    const ip = input.value.trim();
+    if (!ip) return;
+    if (!/^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(ip) && !/^[a-fA-F0-9:]+$/.test(ip)) {
+        toast('请输入有效的 IP 地址', 'error'); return;
+    }
+    if (currentWhitelistIps.includes(ip)) { toast('该 IP 已存在', 'error'); return; }
+    currentWhitelistIps.push(ip);
+    input.value = '';
+    renderWhitelistTags();
+}
+
+function removeIpFromWhitelist(index) {
+    currentWhitelistIps.splice(index, 1);
+    renderWhitelistTags();
+}
+
+async function saveWhitelist() {
+    if (!currentWhitelistKeyId) return;
+    try {
+        const data = await API.post('/api/admin/key/' + currentWhitelistKeyId + '/whitelist', { ipWhitelist: currentWhitelistIps });
+        if (data.success) { toast('IP 白名单已保存', 'success'); closeModal('whitelistModal'); }
+        else { toast(data.message || '保存失败', 'error'); }
+    } catch (e) { toast('保存 IP 白名单失败', 'error'); }
+}
+
+// ===== Config =====
+let configData = [];
+
+async function loadConfig() {
+    try {
+        const data = await API.get('/api/admin/config/list');
+        if (data.success && data.data.success) {
+            configData = data.data.configs || [];
+            const container = document.getElementById('configList');
+            if (configData.length === 0) { container.innerHTML = '<div class="empty-state"><p>暂无配置项</p></div>'; return; }
+            container.innerHTML = configData.map(c => `
+                <div class="config-item">
+                    <div>
+                        <label>${escapeHtml(c.key)}</label>
+                        <div class="config-desc">${escapeHtml(c.description || '')}</div>
+                    </div>
+                    <input type="text" data-config-key="${escapeHtml(c.key)}" value="${escapeHtml(c.value || '')}">
+                </div>
+            `).join('');
+        }
+    } catch (e) { toast('加载配置失败', 'error'); }
+}
+
+async function saveConfig() {
+    const inputs = document.querySelectorAll('[data-config-key]');
+    const configs = {};
+    inputs.forEach(input => { configs[input.dataset.configKey] = input.value; });
+    try {
+        const data = await API.post('/api/admin/config/update', { configs });
+        if (data.success && data.data.success) {
+            toast(`配置已保存，更新了 ${data.data.updatedCount || 0} 项`, 'success');
+        } else { toast(data.data?.message || data.message || '保存失败', 'error'); }
+    } catch (e) { toast('保存配置失败', 'error'); }
+}
+
+// ===== Change Password =====
+async function changePassword() {
+    const currentPwd = document.getElementById('currentPassword').value;
+    const newPwd = document.getElementById('newPassword').value;
+    const confirmPwd = document.getElementById('confirmPassword').value;
+    if (!currentPwd || !newPwd || !confirmPwd) { toast('请填写所有字段', 'error'); return; }
+    if (newPwd !== confirmPwd) { toast('两次输入的新密码不一致', 'error'); return; }
+    if (newPwd.length < 8) { toast('新密码长度不能少于 8 位', 'error'); return; }
+    try {
+        const data = await API.post('/api/auth/change-password', { currentPassword: currentPwd, newPassword: newPwd });
+        if (data.success) {
+            toast('密码修改成功，请重新登录', 'success');
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            setTimeout(() => doLogout(), 1500);
+        } else { toast(data.message || '修改失败', 'error'); }
+    } catch (e) { toast('修改密码失败', 'error'); }
+}
+
+// ===== TOTP 两步验证管理 =====
+async function loadTOTPStatus() {
+    const container = document.getElementById('totpContent');
+    try {
+        const data = await API.get('/api/auth/2fa/status');
+        if (data.success) {
+            const enabled = data.data.enabled;
+            container.innerHTML = enabled ? `
+                <div class="flex-between mb-4">
+                    <div>
+                        <div style="font-size:15px;font-weight:600;color:var(--success);">已启用</div>
+                        <div class="text-sm text-muted mt-2">两步验证已开启，每次登录需要输入验证器中的动态码</div>
+                    </div>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <button class="btn-danger" onclick="showDisable2FA()">关闭两步验证</button>
+            ` : `
+                <div class="flex-between mb-4">
+                    <div>
+                        <div style="font-size:15px;font-weight:600;">未启用</div>
+                        <div class="text-sm text-muted mt-2">启用两步验证后，登录时需要额外输入验证器中的动态码</div>
+                    </div>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <button class="btn-primary" onclick="setup2FA()">启用两步验证</button>
+            `;
+        }
+    } catch (e) { container.innerHTML = '<div class="text-muted">加载失败</div>'; }
+}
+
+async function setup2FA() {
+    try {
+        const data = await API.post('/api/auth/2fa/setup');
+        if (data.success) {
+            totpSetupSecret = data.data.secret;
+            document.getElementById('totpSetupSecret').textContent = data.data.secret;
+            document.getElementById('totpSetupQR').src = generateQRDataURL(data.data.url);
+            document.getElementById('totpSetupCode').value = '';
+            document.getElementById('totpSetupError').textContent = '';
+            openModal('totpSetupModal');
+        } else { toast(data.error || '获取配置失败', 'error'); }
+    } catch (e) { toast('请求失败', 'error'); }
+}
+
+async function confirmEnable2FA() {
+    const code = document.getElementById('totpSetupCode').value.trim();
+    const errorEl = document.getElementById('totpSetupError');
+    errorEl.textContent = '';
+    if (!code || code.length !== 6) { errorEl.textContent = '请输入6位验证码'; return; }
+    try {
+        const data = await API.post('/api/auth/2fa/enable', { secret: totpSetupSecret, code });
+        if (data.success) { closeModal('totpSetupModal'); toast('两步验证已启用', 'success'); loadTOTPStatus(); }
+        else { errorEl.textContent = data.message || '验证失败'; }
+    } catch (e) { errorEl.textContent = '请求失败'; }
+}
+
+function showDisable2FA() {
+    document.getElementById('disable2FAPassword').value = '';
+    document.getElementById('disable2FAError').textContent = '';
+    openModal('disable2FAModal');
+}
+
+async function confirmDisable2FA() {
+    const password = document.getElementById('disable2FAPassword').value;
+    const errorEl = document.getElementById('disable2FAError');
+    errorEl.textContent = '';
+    if (!password) { errorEl.textContent = '请输入密码'; return; }
+    try {
+        const data = await API.post('/api/auth/2fa/disable', { password });
+        if (data.success) { closeModal('disable2FAModal'); toast('两步验证已关闭', 'success'); loadTOTPStatus(); }
+        else { errorEl.textContent = data.message || '操作失败'; }
+    } catch (e) { errorEl.textContent = '请求失败'; }
+}
+
+function generateQRDataURL(text) {
+    const canvas = document.createElement('canvas');
+    const size = 200;
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+    const modules = _qrEncode(text);
+    const n = modules.length, cell = Math.floor(size / (n + 8)), off = Math.floor((size - cell * n) / 2);
+    ctx.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (modules[r][c]) ctx.fillRect(off + c * cell, off + r * cell, cell, cell);
+    return canvas.toDataURL('image/png');
+}
+function _qrEncode(text) {
+    const data = new TextEncoder().encode(text);
+    const cap = [0,17,32,53,78,106,134,154,192,230,271];
+    let ver = 1; for (; ver <= 10; ver++) if (cap[ver] >= data.length) break;
+    if (ver > 10) ver = 10;
+    const sz = ver * 4 + 17;
+    const g = Array.from({length: sz}, () => Array(sz).fill(null));
+    const res = Array.from({length: sz}, () => Array(sz).fill(false));
+    function s(r, c, v, f) { if (r >= 0 && r < sz && c >= 0 && c < sz) { g[r][c] = v ? 1 : 0; if (f) res[r][c] = true; } }
+    function fp(row, col) { for (let r = -1; r <= 7; r++) for (let c = -1; c <= 7; c++) { const rr = row + r, cc = col + c; if (rr < 0 || rr >= sz || cc < 0 || cc >= sz) continue; s(rr, cc, (r >= 0 && r <= 6 && (c === 0 || c === 6)) || (c >= 0 && c <= 6 && (r === 0 || r === 6)) || (r >= 2 && r <= 4 && c >= 2 && c <= 4), true); } }
+    fp(0, 0); fp(0, sz - 7); fp(sz - 7, 0);
+    for (let i = 8; i < sz - 8; i++) { s(6, i, i % 2 === 0, true); s(i, 6, i % 2 === 0, true); }
+    if (ver >= 2) { const ap = [0,[],[18],[22],[26],[30],[34],[6,22,38],[6,24,42],[6,26,46],[6,28,50]][ver]; if (ap && ap.length) { const ps = [6, ...ap]; for (const r of ps) for (const c of ps) { if (res[r] && res[r][c]) continue; for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) s(r + dr, c + dc, Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0), true); } } }
+    s(sz - 8, 8, 1, true);
+    for (let i = 0; i < 8; i++) { s(8, i, 0, true); s(8, sz - 1 - i, 0, true); s(i, 8, 0, true); s(sz - 1 - i, 8, 0, true); }
+    s(8, 8, 0, true);
+    const eccN = [0,7,10,15,20,26,18,20,24,30,18][ver], totN = [0,26,44,70,100,134,86,98,114,130,154][ver], dataN = totN - eccN;
+    let bits = '0100' + (ver <= 9 ? data.length.toString(2).padStart(8, '0') : data.length.toString(2).padStart(16, '0'));
+    for (const b of data) bits += b.toString(2).padStart(8, '0');
+    const mx = dataN * 8; bits += '0000'.slice(0, Math.min(4, mx - bits.length));
+    while (bits.length % 8) bits += '0';
+    while (bits.length < mx) { bits += '11101100'; if (bits.length < mx) bits += '00010001'; }
+    bits = bits.slice(0, mx);
+    const cw = []; for (let i = 0; i < bits.length; i += 8) cw.push(parseInt(bits.slice(i, i + 8), 2));
+    const gfE = new Uint8Array(512), gfL = new Uint8Array(256); let x = 1;
+    for (let i = 0; i < 255; i++) { gfE[i] = x; gfL[x] = i; x = (x << 1) ^ (x >= 128 ? 0x11d : 0); }
+    for (let i = 255; i < 512; i++) gfE[i] = gfE[i - 255];
+    const gfM = (a, b) => a === 0 || b === 0 ? 0 : gfE[gfL[a] + gfL[b]];
+    let gen = [1]; for (let i = 0; i < eccN; i++) { const ng = new Array(gen.length + 1).fill(0); for (let j = 0; j < gen.length; j++) { ng[j] ^= gen[j]; ng[j + 1] ^= gfM(gen[j], gfE[i]); } gen = ng; }
+    const msg = [...cw, ...new Array(eccN).fill(0)];
+    for (let i = 0; i < cw.length; i++) { const cf = msg[i]; if (cf) for (let j = 0; j < gen.length; j++) msg[i + j] ^= gfM(gen[j], cf); }
+    const all = [...cw, ...msg.slice(cw.length)];
+    let ab = ''; for (const c of all) ab += c.toString(2).padStart(8, '0');
+    let bi = 0;
+    for (let col = sz - 1; col >= 0; col -= 2) { if (col === 6) col = 5; for (let row = 0; row < sz; row++) for (let c = 0; c < 2; c++) { const cc = col - c, rr = (Math.floor((sz - 1 - col + (col < 6 ? 1 : 0)) / 2) % 2 === 0) ? sz - 1 - row : row; if (cc >= 0 && cc < sz && rr >= 0 && rr < sz && !res[rr][cc] && g[rr][cc] === null) g[rr][cc] = bi < ab.length ? parseInt(ab[bi++]) : 0; } }
+    for (let r = 0; r < sz; r++) for (let c = 0; c < sz; c++) { if (g[r][c] === null) g[r][c] = 0; if (!res[r][c] && (r + c) % 2 === 0) g[r][c] ^= 1; }
+    const fb = [1,1,1,0,1,1,1,1,1,0,0,0,1,0,0];
+    const f1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    const f2 = [[sz-1,8],[sz-2,8],[sz-3,8],[sz-4,8],[sz-5,8],[sz-6,8],[sz-7,8],[8,sz-8],[8,sz-7],[8,sz-6],[8,sz-5],[8,sz-4],[8,sz-3],[8,sz-2],[8,sz-1]];
+    for (let i = 0; i < 15; i++) { g[f1[i][0]][f1[i][1]] = fb[i]; g[f2[i][0]][f2[i][1]] = fb[i]; }
+    return g;
+}
+
+// ===== Modal Escape Key =====
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('.modal-overlay.open');
+        modals.forEach(m => m.classList.remove('open'));
+    }
+});
+
+// ===== Event Delegation (防 XSS) =====
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const name = btn.dataset.name;
+    const id = btn.dataset.id ? parseInt(btn.dataset.id) : null;
+    switch (action) {
+        case 'signed-link': generateSignedLinkFor(name); break;
+        case 'delete-file': confirmDeleteFile(name); break;
+        case 'whitelist': showWhitelistModal(id, name); break;
+        case 'reset-key': confirmResetKey(id, name); break;
+        case 'delete-key': confirmDeleteKey(id, name); break;
+    }
+});
+
+// ===== Init =====
+(async function init() {
+    // Restore sidebar state
+    if (localStorage.getItem('arcartx_sidebar_collapsed') === 'true') {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.add('collapsed');
+        const btn = sidebar.querySelector('.sidebar-toggle-btn svg');
+        if (btn) btn.innerHTML = '<polyline points="9 18 15 12 9 6"/>';
+    }
+
+    initUploadArea();
+
+    if (authToken) {
+        const valid = await validateToken();
+        if (valid) {
+            showDashboard();
+            return;
+        }
+        authToken = '';
+        localStorage.removeItem('arcartx_token');
+    }
+    // Show login
+    window.location.hash = '#/login';
+    document.getElementById('loginPage').classList.add('active');
+    loadCaptcha();
+
+    document.getElementById('loginForm').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
+    });
+})();
+</script>
+</body>
+</html>
